@@ -1,0 +1,799 @@
+Here is an HTML document that creates a personal vocabulary manager web app named "BAZ", which uses the DeepSeek API to translate text to Arabic and saves terms locally for later review.
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>BAZ - مدرب المفردات المهنية</title>
+    <!-- Font Awesome 6 (Free) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts: Arabic & Latin clean -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f7f9fc 0%, #eef2f5 100%);
+            font-family: 'Cairo', 'Inter', sans-serif;
+            color: #1e2a3e;
+            padding: 1.5rem;
+            min-height: 100vh;
+        }
+
+        /* container */
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* header */
+        .brand {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .brand h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #0b3b5f, #1b7f7a);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .brand h1 i {
+            background: none;
+            color: #1b7f7a;
+            font-size: 2.8rem;
+        }
+        .brand p {
+            color: #4a627a;
+            font-weight: 500;
+            margin-top: 0.3rem;
+            font-size: 1.1rem;
+        }
+
+        /* two column layout */
+        .dashboard {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.8rem;
+        }
+        .translate-panel {
+            flex: 1.2;
+            min-width: 280px;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+            padding: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        .saved-panel {
+            flex: 1.8;
+            min-width: 320px;
+            background: white;
+            border-radius: 2rem;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* elements */
+        .api-section {
+            background: #f0f4f8;
+            border-radius: 1.2rem;
+            padding: 0.8rem 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem;
+            justify-content: space-between;
+        }
+        .api-input-group {
+            display: flex;
+            flex: 3;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .api-input-group input {
+            flex: 2;
+            min-width: 180px;
+            padding: 0.7rem 1rem;
+            border-radius: 2rem;
+            border: 1px solid #cbd5e1;
+            background: white;
+            font-family: monospace;
+            direction: ltr;
+            font-size: 0.85rem;
+        }
+        button {
+            background: #1b7f7a;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 2rem;
+            color: white;
+            font-weight: 600;
+            font-family: 'Cairo', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        button i {
+            font-size: 1rem;
+        }
+        button:hover {
+            background: #0e5e5a;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        button.secondary {
+            background: #3b6e8b;
+        }
+        button.outline {
+            background: transparent;
+            border: 1px solid #1b7f7a;
+            color: #1b7f7a;
+        }
+        button.outline:hover {
+            background: #1b7f7a10;
+        }
+        .danger-btn {
+            background: #b91c1c;
+        }
+        .danger-btn:hover {
+            background: #991b1b;
+        }
+        textarea {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 1.5rem;
+            border: 1px solid #d1d9e8;
+            font-family: 'Inter', monospace;
+            font-size: 1rem;
+            resize: vertical;
+            background: white;
+            margin: 0.8rem 0;
+            direction: ltr;
+            text-align: left;
+        }
+        .translation-box {
+            background: #eef2fa;
+            border-radius: 1.2rem;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-right: 5px solid #1b7f7a;
+            word-break: break-word;
+        }
+        .translation-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #0c4e6e;
+            margin: 0.5rem 0;
+            direction: rtl;
+            text-align: right;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .saved-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.8rem;
+        }
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background: #f1f5f9;
+            border-radius: 2rem;
+            padding: 0.3rem 0.8rem;
+            gap: 8px;
+        }
+        .search-bar i {
+            color: #6c86a3;
+        }
+        .search-bar input {
+            border: none;
+            background: transparent;
+            padding: 0.5rem;
+            font-family: inherit;
+            width: 150px;
+            outline: none;
+        }
+        .saved-list {
+            max-height: 55vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+            padding-left: 4px;
+        }
+        .saved-card {
+            background: #ffffff;
+            border-radius: 1.2rem;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid #e9edf2;
+            transition: all 0.2s;
+        }
+        .saved-card:hover {
+            box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+            transform: translateX(-3px);
+        }
+        .card-original {
+            font-weight: 700;
+            font-size: 1rem;
+            direction: ltr;
+            text-align: left;
+            background: #f8fafc;
+            padding: 0.4rem 0.7rem;
+            border-radius: 1rem;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+        .card-translation {
+            color: #1b7f7a;
+            font-weight: 500;
+            margin: 8px 0;
+            direction: rtl;
+        }
+        .card-meta {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .card-meta button {
+            background: none;
+            padding: 4px 8px;
+            font-size: 0.8rem;
+            color: #4b5563;
+        }
+        .card-meta button i {
+            pointer-events: none;
+        }
+        .empty-msg {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 2rem;
+            font-style: italic;
+        }
+        .badge {
+            background: #e2e8f0;
+            border-radius: 30px;
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            max-width: 500px;
+            width: 90%;
+            border-radius: 2rem;
+            padding: 1.8rem;
+            text-align: center;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.2);
+        }
+        .flashcard {
+            background: #fef9e6;
+            padding: 2rem;
+            border-radius: 1.8rem;
+            margin: 1rem 0;
+            cursor: pointer;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-weight: 500;
+            transition: 0.1s linear;
+            border: 1px solid #ffde9c;
+        }
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
+        }
+        .loading {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid white;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.8rem;
+            color: #5c6f87;
+        }
+        @media (max-width: 800px) {
+            body { padding: 1rem; }
+            .translate-panel, .saved-panel { flex: auto; }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="brand">
+        <h1><i class="fas fa-language"></i> BAZ <span style="font-size: 1.8rem;">🗂️</span></h1>
+        <p>ترجمة ذكية • حفظ المصطلحات • مراجعة مكثفة لمستوى B2 المهني</p>
+    </div>
+
+    <div class="dashboard">
+        <!-- ترجمة و حفظ -->
+        <div class="translate-panel">
+            <div class="api-section">
+                <div class="api-input-group">
+                    <i class="fas fa-key"></i>
+                    <input type="password" id="apiKeyInput" placeholder="مفتاح DeepSeek API" autocomplete="off">
+                    <button id="saveApiBtn" class="outline" style="padding: 0.5rem 1rem;"><i class="fas fa-save"></i> حفظ</button>
+                </div>
+                <small style="color:#2666cf;"><i class="fas fa-info-circle"></i> <a href="https://platform.deepseek.com/api_keys" target="_blank" style="color:#1b7f7a;">احصل على مفتاح API</a></small>
+            </div>
+
+            <label style="font-weight: 600;"><i class="fas fa-pen-alt"></i> النص (كلمة / جملة)</label>
+            <textarea id="sourceText" rows="3" placeholder="مثال: Anerkennung ausländischer Berufsabschlüsse&#10;أو: Besprechung vorbereiten"></textarea>
+            
+            <button id="translateBtn"><i class="fas fa-robot"></i> ترجمة إلى العربية</button>
+            
+            <div id="translationArea" class="translation-box" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span><i class="fas fa-language"></i> الترجمة:</span>
+                    <button id="copyTranslationBtn" class="outline" style="padding: 4px 10px;"><i class="far fa-copy"></i> نسخ</button>
+                </div>
+                <div id="translationResult" class="translation-text"></div>
+            </div>
+
+            <div class="action-buttons">
+                <button id="saveTermBtn" disabled><i class="fas fa-bookmark"></i> حفظ المصطلح / الجملة</button>
+                <button id="clearTextBtn" class="outline"><i class="fas fa-undo-alt"></i> مسح النص</button>
+            </div>
+        </div>
+
+        <!-- قسم المفردات المحفوظة -->
+        <div class="saved-panel">
+            <div class="saved-header">
+                <h3><i class="fas fa-archive"></i> مفرداتي <span id="savedCount" class="badge">0</span></h3>
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="بحث في الأصل أو الترجمة">
+                </div>
+                <div style="display: flex; gap: 6px;">
+                    <button id="exportDataBtn" class="outline" title="تصدير"><i class="fas fa-download"></i></button>
+                    <button id="importDataBtn" class="outline" title="استيراد"><i class="fas fa-upload"></i></button>
+                    <button id="deleteAllBtn" class="danger-btn" style="background:#b91c1c80;"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            </div>
+            <button id="flashcardOpenBtn" style="background:#2c7a5e; width: 100%;"><i class="fas fa-layer-group"></i> بدء المراجعة (بطاقات تعليمية)</button>
+            <div id="savedListContainer" class="saved-list">
+                <div class="empty-msg">✨ لا توجد مصطلحات بعد. ترجم شيئاً واحفظه!</div>
+            </div>
+        </div>
+    </div>
+    <footer>🔐 التخزين المحلي فقط • بياناتك خاصة • ترجمة فورية بـ DeepSeek API</footer>
+</div>
+
+<!-- مودال المراجعة -->
+<div id="flashcardModal" class="modal">
+    <div class="modal-content">
+        <h3><i class="fas fa-cards"></i> مراجعة البطاقات</h3>
+        <div id="flashcardFront" class="flashcard">...</div>
+        <div class="flex-between">
+            <button id="prevCardBtn"><i class="fas fa-arrow-right"></i> السابق</button>
+            <button id="flipCardBtn"><i class="fas fa-sync-alt"></i> قلب</button>
+            <button id="nextCardBtn">التالي <i class="fas fa-arrow-left"></i></button>
+        </div>
+        <button id="closeModalBtn" class="outline" style="margin-top: 1.2rem; width:100%;">إغلاق</button>
+    </div>
+</div>
+
+<script>
+    // ---------- STORAGE KEYS ----------
+    const STORAGE_TERMS = "baz_saved_terms";
+    const STORAGE_APIKEY = "baz_deepseek_key";
+
+    // Global state
+    let savedTerms = [];         // each: { id, original, translation, timestamp }
+    let currentTranslation = { original: "", translation: "" };  // last translated
+    let filterQuery = "";
+
+    // DOM Elements
+    const apiKeyInput = document.getElementById("apiKeyInput");
+    const saveApiBtn = document.getElementById("saveApiBtn");
+    const sourceTextarea = document.getElementById("sourceText");
+    const translateBtn = document.getElementById("translateBtn");
+    const translationArea = document.getElementById("translationArea");
+    const translationResultDiv = document.getElementById("translationResult");
+    const saveTermBtn = document.getElementById("saveTermBtn");
+    const clearTextBtn = document.getElementById("clearTextBtn");
+    const copyTranslationBtn = document.getElementById("copyTranslationBtn");
+    const savedListContainer = document.getElementById("savedListContainer");
+    const savedCountSpan = document.getElementById("savedCount");
+    const searchInput = document.getElementById("searchInput");
+    const exportDataBtn = document.getElementById("exportDataBtn");
+    const importDataBtn = document.getElementById("importDataBtn");
+    const deleteAllBtn = document.getElementById("deleteAllBtn");
+    const flashcardOpenBtn = document.getElementById("flashcardOpenBtn");
+    const modal = document.getElementById("flashcardModal");
+    const flashcardFront = document.getElementById("flashcardFront");
+    const prevCardBtn = document.getElementById("prevCardBtn");
+    const nextCardBtn = document.getElementById("nextCardBtn");
+    const flipCardBtn = document.getElementById("flipCardBtn");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+
+    // ----- Helper functions -----
+    function loadFromLocalStorage() {
+        const stored = localStorage.getItem(STORAGE_TERMS);
+        if(stored) {
+            try{
+                savedTerms = JSON.parse(stored);
+            }catch(e){ savedTerms = []; }
+        } else {
+            savedTerms = [];
+        }
+        const savedKey = localStorage.getItem(STORAGE_APIKEY);
+        if(savedKey) apiKeyInput.value = savedKey;
+        renderSavedList();
+    }
+
+    function saveTermsToLocal() {
+        localStorage.setItem(STORAGE_TERMS, JSON.stringify(savedTerms));
+        renderSavedList();
+    }
+
+    function updateSaveButtonState() {
+        saveTermBtn.disabled = (!currentTranslation.translation || !currentTranslation.original);
+    }
+
+    // Render saved list with filter
+    function renderSavedList() {
+        const query = filterQuery.trim().toLowerCase();
+        let filtered = savedTerms;
+        if(query) {
+            filtered = savedTerms.filter(t => t.original.toLowerCase().includes(query) || t.translation.toLowerCase().includes(query));
+        }
+        savedCountSpan.innerText = filtered.length;
+        if(filtered.length === 0) {
+            savedListContainer.innerHTML = `<div class="empty-msg">📭 لا توجد عناصر مطابقة ... أضف كلمات جديدة</div>`;
+            return;
+        }
+        savedListContainer.innerHTML = "";
+        filtered.forEach(term => {
+            const card = document.createElement("div");
+            card.className = "saved-card";
+            card.innerHTML = `
+                <div class="card-original"><i class="fas fa-quote-left"></i> ${escapeHtml(term.original)}</div>
+                <div class="card-translation"><i class="fas fa-arrow-left"></i> ${escapeHtml(term.translation)}</div>
+                <div class="card-meta">
+                    <button class="delete-term outline" data-id="${term.id}"><i class="fas fa-trash-can"></i> حذف</button>
+                    <button class="speak-original outline" data-text="${escapeHtml(term.original)}"><i class="fas fa-volume-up"></i> نطق</button>
+                </div>
+            `;
+            savedListContainer.appendChild(card);
+        });
+        // attach delete events
+        document.querySelectorAll(".delete-term").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const id = btn.getAttribute("data-id");
+                deleteTermById(id);
+            });
+        });
+        // attach speak events
+        document.querySelectorAll(".speak-original").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const text = btn.getAttribute("data-text");
+                speakText(text);
+            });
+        });
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+
+    function deleteTermById(id) {
+        savedTerms = savedTerms.filter(t => t.id != id);
+        saveTermsToLocal();
+    }
+
+    function deleteAllTerms() {
+        if(confirm("⚠️ هل أنت متأكد من حذف جميع المصطلحات المحفوظة؟")) {
+            savedTerms = [];
+            saveTermsToLocal();
+        }
+    }
+
+    // Call DeepSeek API
+    async function callDeepSeekTranslate(text) {
+        const apiKey = localStorage.getItem(STORAGE_APIKEY);
+        if(!apiKey) throw new Error("الرجاء إدخال مفتاح DeepSeek API وحفظه");
+        if(!text.trim()) throw new Error("النص فارغ");
+        const url = "https://api.deepseek.com/v1/chat/completions";
+        const payload = {
+            model: "deepseek-chat",
+            messages: [
+                { role: "system", content: "أنت مترجم خبير. مهمتك: ترجمة النص الذي يقدمه المستخدم إلى اللغة العربية الفصحى أو العامية المفهومة. أخرج الترجمة فقط بدون أي شرح إضافي أو علامات تنصيص. إذا كانت كلمة مفردة قدّم الترجمة الأنسب في السياق المهني."},
+                { role: "user", content: text }
+            ],
+            temperature: 0.3,
+            max_tokens: 500
+        };
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            },
+            body: JSON.stringify(payload)
+        });
+        if(!response.ok) {
+            const errData = await response.json().catch(()=>({}));
+            throw new Error(`API error ${response.status}: ${errData.error?.message || "فشل الترجمة"}`);
+        }
+        const data = await response.json();
+        const translation = data.choices?.[0]?.message?.content?.trim();
+        if(!translation) throw new Error("لم تتلق الترجمة من النموذج");
+        return translation;
+    }
+
+    // Translate action
+    async function handleTranslate() {
+        const text = sourceTextarea.value.trim();
+        if(!text) {
+            alert("يرجى إدخال نص للترجمة");
+            return;
+        }
+        const apiKey = localStorage.getItem(STORAGE_APIKEY);
+        if(!apiKey) {
+            alert("⚠️ يرجى حفظ مفتاح DeepSeek API أولاً (الحقل أعلاه)");
+            return;
+        }
+        // show loading state
+        const originalBtnText = translateBtn.innerHTML;
+        translateBtn.innerHTML = '<i class="loading"></i> جاري الترجمة...';
+        translateBtn.disabled = true;
+        try {
+            const translation = await callDeepSeekTranslate(text);
+            translationResultDiv.innerText = translation;
+            translationArea.style.display = "block";
+            currentTranslation = { original: text, translation: translation };
+            updateSaveButtonState();
+        } catch (err) {
+            alert("خطأ في الترجمة: " + err.message);
+            translationArea.style.display = "none";
+            currentTranslation = { original: "", translation: "" };
+            updateSaveButtonState();
+        } finally {
+            translateBtn.innerHTML = originalBtnText;
+            translateBtn.disabled = false;
+        }
+    }
+
+    // Save current translation term
+    function saveCurrentTerm() {
+        if(!currentTranslation.original || !currentTranslation.translation) {
+            alert("لا توجد ترجمة حالية للحفظ. قم بالترجمة أولاً.");
+            return;
+        }
+        // avoid exact duplicate? we allow but may notify
+        const alreadyExists = savedTerms.some(t => t.original === currentTranslation.original && t.translation === currentTranslation.translation);
+        if(alreadyExists) {
+            if(confirm("هذا المصطلح موجود بالفعل في مكتبتك. هل تريد إضافة نسخة مكررة؟")) {
+                addTermToSaved(currentTranslation.original, currentTranslation.translation);
+            }
+        } else {
+            addTermToSaved(currentTranslation.original, currentTranslation.translation);
+        }
+    }
+
+    function addTermToSaved(original, translation) {
+        const newTerm = {
+            id: Date.now() + "-" + Math.random().toString(36).substr(2, 6),
+            original: original.trim(),
+            translation: translation.trim(),
+            timestamp: new Date().toISOString()
+        };
+        savedTerms.unshift(newTerm); // newest first
+        saveTermsToLocal();
+        // optional feedback
+        const notification = document.createElement("div");
+        notification.textContent = "✓ تم الحفظ";
+        notification.style.position = "fixed"; notification.style.bottom = "20px"; notification.style.right = "20px";
+        notification.style.background = "#1b7f7a"; notification.style.color = "white"; notification.style.padding = "8px 18px";
+        notification.style.borderRadius = "40px"; notification.style.zIndex = "999"; notification.style.fontWeight = "bold";
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 1500);
+    }
+
+    // export as JSON
+    function exportData() {
+        if(savedTerms.length === 0) { alert("لا توجد بيانات للتصدير"); return; }
+        const dataStr = JSON.stringify(savedTerms, null, 2);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `baz_vocab_${new Date().toISOString().slice(0,19)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importData() {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "application/json";
+        input.onchange = e => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    const imported = JSON.parse(ev.target.result);
+                    if(Array.isArray(imported) && imported.every(item => item.original && item.translation)) {
+                        const merged = [...imported, ...savedTerms];
+                        const uniqueMap = new Map();
+                        merged.forEach(term => {
+                            const key = term.original + "|" + term.translation;
+                            if(!uniqueMap.has(key)) uniqueMap.set(key, term);
+                        });
+                        savedTerms = Array.from(uniqueMap.values());
+                        saveTermsToLocal();
+                        alert(`تم استيراد ${imported.length} مصطلح بنجاح`);
+                    } else {
+                        alert("ملف غير صالح: يجب أن يحتوي على قائمة تحتوي original و translation");
+                    }
+                } catch(err) {
+                    alert("خطأ في قراءة الملف");
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+
+    // speech
+    function speakText(text) {
+        if(!window.speechSynthesis) {
+            alert("المتصفح لا يدعم النطق");
+            return;
+        }
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "de-DE";  // original غالباً ألماني أو إنكليزي
+        utterance.rate = 0.9;
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+    }
+
+    // Flashcard logic
+    let flashcardIndex = 0;
+    let isFlipped = false;
+    let flashcardTerms = [];
+
+    function openFlashcardModal() {
+        if(savedTerms.length === 0) {
+            alert("لا توجد مصطلحات محفوظة للمراجعة. قم بحفظ بعض الكلمات أولاً.");
+            return;
+        }
+        flashcardTerms = [...savedTerms];
+        flashcardIndex = 0;
+        isFlipped = false;
+        updateFlashcardDisplay();
+        modal.style.display = "flex";
+    }
+
+    function updateFlashcardDisplay() {
+        if(flashcardTerms.length === 0) return;
+        const current = flashcardTerms[flashcardIndex];
+        if(isFlipped) {
+            flashcardFront.innerHTML = `<div style="direction: rtl;">📖 ${escapeHtml(current.translation)}</div><small style="display:block; margin-top:8px;">👇 اضغط للعودة للسؤال</small>`;
+        } else {
+            flashcardFront.innerHTML = `<div style="direction: ltr; font-weight:600;">✏️ ${escapeHtml(current.original)}</div><small style="display:block; margin-top:8px;">👈 اضغط لعرض الترجمة</small>`;
+        }
+    }
+
+    function flipCard() {
+        isFlipped = !isFlipped;
+        updateFlashcardDisplay();
+    }
+
+    function nextCard() {
+        if(flashcardTerms.length === 0) return;
+        flashcardIndex = (flashcardIndex + 1) % flashcardTerms.length;
+        isFlipped = false;
+        updateFlashcardDisplay();
+    }
+
+    function prevCard() {
+        if(flashcardTerms.length === 0) return;
+        flashcardIndex = (flashcardIndex - 1 + flashcardTerms.length) % flashcardTerms.length;
+        isFlipped = false;
+        updateFlashcardDisplay();
+    }
+
+    // initial events and key manager
+    function init() {
+        loadFromLocalStorage();
+        saveApiBtn.addEventListener("click", () => {
+            const key = apiKeyInput.value.trim();
+            if(key) {
+                localStorage.setItem(STORAGE_APIKEY, key);
+                alert("✅ تم حفظ مفتاح API بنجاح");
+            } else {
+                localStorage.removeItem(STORAGE_APIKEY);
+                alert("تم إزالة المفتاح");
+            }
+        });
+        translateBtn.addEventListener("click", handleTranslate);
+        saveTermBtn.addEventListener("click", saveCurrentTerm);
+        clearTextBtn.addEventListener("click", () => { sourceTextarea.value = ""; translationArea.style.display = "none"; currentTranslation = {original:"", translation:""}; updateSaveButtonState(); });
+        copyTranslationBtn.addEventListener("click", () => {
+            const transText = translationResultDiv.innerText;
+            if(transText) {
+                navigator.clipboard.writeText(transText);
+                alert("تم نسخ الترجمة");
+            }
+        });
+        searchInput.addEventListener("input", (e) => { filterQuery = e.target.value; renderSavedList(); });
+        exportDataBtn.addEventListener("click", exportData);
+        importDataBtn.addEventListener("click", importData);
+        deleteAllBtn.addEventListener("click", deleteAllTerms);
+        flashcardOpenBtn.addEventListener("click", openFlashcardModal);
+        closeModalBtn.addEventListener("click", () => { modal.style.display = "none"; });
+        flipCardBtn.addEventListener("click", flipCard);
+        nextCardBtn.addEventListener("click", nextCard);
+        prevCardBtn.addEventListener("click", prevCard);
+        flashcardFront.addEventListener("click", flipCard);
+        window.addEventListener("click", (e) => { if(e.target === modal) modal.style.display = "none"; });
+        // Load any stored key value into field
+        const storedKey = localStorage.getItem(STORAGE_APIKEY);
+        if(storedKey) apiKeyInput.value = storedKey;
+    }
+
+    init();
+</script>
+</body>
+</html>
+```
